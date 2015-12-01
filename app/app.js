@@ -1,7 +1,31 @@
+'use strict'
+const fs = require('fs')
+const path = require('path')
 const express = require('express')
-const scoreboard = require('../data/scoreboard.json')
 const bodyParser = require('body-parser')
+
 const app = express()
+const filepath = path.join(__dirname, '../data/scoreboard.json')
+let scoreboard
+
+app.use((req, res, next) => {
+  fs.readFile(filepath, 'utf8', (err, data) => {
+    if (err) console.warn('Failed to read file')
+    else scoreboard = JSON.parse(data)
+    if (req.method !== 'GET') {
+      const fin = res.end
+      res.end = function () {
+        fs.writeFileSync(
+          filepath,
+          JSON.stringify(scoreboard, null, '  ')
+        )
+        return fin.apply(this, arguments)
+      }
+    }
+    next()
+  })
+})
+
 app.use(express.static('public'))
 app.use(bodyParser.json())
 
